@@ -1,0 +1,10 @@
+[{
+  "label": "Toaster",
+  "entity_id": "switch.toaster",
+  "state": false
+},
+{
+  "label": "Lamp",
+  "entity_id": "switch.lamp1",
+  "state": false
+}]
