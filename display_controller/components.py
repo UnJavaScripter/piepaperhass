@@ -1,4 +1,5 @@
 import logging
+import math
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -101,14 +102,6 @@ class Card:
     self.margin_y = margin_y
     self.state = state
 
-    # logging.info("000000000000000000000")
-    # logging.info(f"font.size: {self.font.size}")
-    # # logging.info(f"text_width: {self.text_width}")
-    # logging.info(f"text_height: {self.text_height}")
-    # logging.info(f"ascent: {self.ascent}")
-    # logging.info(f"descent: {self.descent}")
-    # logging.info("_________________________")
-
     if width < self.text_width:
       self.width = self.text_width + (self.margin_x * 2)
     else:
@@ -138,6 +131,73 @@ class CardWithStateIndicator(Card):
     y = self.y + self.header_height
     RoundIndicator(self.draw, self.x, y, self.margin_x, self.margin_y, state)
 
+class Gauge():
+  def __init__(self, draw, width, height, font_large, font_small, border_width, needle_width, min_value=0, max_value=100):
+    self.draw = draw
+    self.font_small = font_small
+    self.font_large = font_large
+    self.needle_width = needle_width
+    self.min_value = min_value
+
+    self.center_x = width // 2
+    self.center_y = height // 2
+    self.radius = width // 4
+
+
+    start_angle = -225  # Angle for 0 value
+    end_angle = 45  # Angle for 100 value
+    
+    # The Gauge background
+    shape = [(self.center_x - self.radius, self.center_y - self.radius), (self.center_x + self.radius, self.center_y + self.radius)]
+
+    self.draw.pieslice(shape, start=start_angle, end=end_angle, fill = 255, outline=0, width=border_width)
+    
+    # Indicators angles
+    angle_range = end_angle - start_angle - (end_angle * 1)
+    self.angle_step = angle_range / (max_value - self.min_value)
+    
+    # Indicators offset
+    self.offset_start = start_angle + ((end_angle / 2) / self.radius * 180 / math.pi)
+
+    for indicator_value in range(self.min_value, max_value + 1, 10):
+      angle = (self.offset_start + ((indicator_value - self.min_value) * self.angle_step)  ) + 4
+      radian_angle = math.radians(angle)
+      
+      indicator_line_x1 = self.center_x + (self.radius) * math.cos(radian_angle)
+      indicator_line_y1 = self.center_y + (self.radius) * math.sin(radian_angle)
+      indicator_line_x2 = self.center_x + (self.radius - self.font_small.size * .3) * math.cos(radian_angle)
+      indicator_line_y2 = self.center_y + (self.radius - self.font_small.size * .3) * math.sin(radian_angle)
+
+      indicator_number_x2 = self.center_x + (self.radius - self.font_small.size * 1.4) * math.cos(radian_angle)
+      indicator_number_y2 = self.center_y + (self.radius - self.font_small.size * 1.4) * math.sin(radian_angle)
+      
+      self.draw.line([(indicator_line_x1, indicator_line_y1), (indicator_line_x2, indicator_line_y2)], fill = 0, width=math.ceil(self.font_small.size * 0.1))
+      
+      indicator_label_text = str(indicator_value)
+      (bbx, bby, label_width, label_height) = self.font_small.getbbox(indicator_label_text)
+      label_x = (indicator_number_x2 - label_width // 2)
+      label_y = (indicator_number_y2 - label_height // 2)
+      self.draw.text((label_x, label_y), indicator_label_text, fill = 0, font=self.font_small)
+        
+
+  def set_value(self, value):
+    needle_angle = (self.offset_start + (value - self.min_value) * self.angle_step) + 4
+    needle_length = self.radius - self.font_small.size * 2
+    needle_x = self.center_x + int(needle_length * math.cos(math.radians(needle_angle)))
+    needle_y = self.center_y + int(needle_length * math.sin(math.radians(needle_angle)))
+    
+    # Draw needle
+    self.draw.line([(self.center_x, self.center_y), (needle_x, needle_y)], fill = 0, width=self.needle_width)
+
+    # Draw value
+    label_text = str(value)
+    (bbx, bby, label_width, label_height) = self.font_large.getbbox(label_text)
+    label_x = self.center_x - label_width // 2
+    label_y = self.center_y + self.radius / 3.3
+    self.draw.rectangle([(label_x, label_y), (label_x + label_width, label_y + label_height)], fill = 255)
+    self.draw.text((label_x, label_y), label_text, fill = 0, font=self.font_large)
+
+    
 # class Row():
 #   def __init__(self, draw, x, y, image_size, margin_x, margin_y, font, children):
 #     self.draw = draw

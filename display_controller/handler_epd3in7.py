@@ -53,6 +53,8 @@ class DisplayHandler:
         }
 
         logging.info("init and Clear")
+
+        logging.info("init and Clear")
         self.epd.init(0)
         self.epd.Clear(0xFF, 0)
         
